@@ -14,7 +14,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata = {
-  title: "Your Name | Full Stack Developer",
+  title: "Eugene Vher I. Rangcapan | Full Stack Developer",
   description:
     "Full stack developer portfolio — building clean, performant web applications with modern tools.",
 };
