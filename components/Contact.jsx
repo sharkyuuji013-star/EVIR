@@ -1,8 +1,47 @@
 "use client";
 
+import { useState } from "react";
 import { contact } from "@/data/content";
 
 export default function Contact() {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState("idle"); // idle | sending | success | error
+
+  const handleChange = (e) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("success");
+        setForm({ name: "", email: "", message: "" });
+      } else {
+        setStatus("error");
+        setErrorMsg(data.error || "Something went wrong. Please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setErrorMsg("Network error. Please check your connection.");
+    }
+  };
+
   return (
     <section
       id="contact"
@@ -25,35 +64,51 @@ export default function Contact() {
         <div className="flex flex-col lg:flex-row gap-12">
 
           {/* ── Left: Form ── */}
-          <form
-            className="flex-1 flex flex-col gap-4"
-            onSubmit={(e) => e.preventDefault()}
-          >
+          <form className="flex-1 flex flex-col gap-4" onSubmit={handleSubmit}>
             <input
               type="text"
+              name="name"
               placeholder="Name"
+              value={form.name}
+              onChange={handleChange}
+              required
               className="bg-transparent border border-white/15 rounded px-4 py-3 font-mono text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition-colors"
             />
             <input
               type="email"
+              name="email"
               placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              required
               className="bg-transparent border border-white/15 rounded px-4 py-3 font-mono text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition-colors"
             />
             <textarea
+              name="message"
               placeholder="Message"
               rows={6}
+              value={form.message}
+              onChange={handleChange}
+              required
               className="bg-transparent border border-white/15 rounded px-4 py-3 font-mono text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition-colors resize-none"
             />
             <button
               type="submit"
-              className="flex items-center justify-center gap-2 bg-white text-background font-mono text-sm font-bold py-3 px-6 rounded hover:bg-accent transition-colors"
+              disabled={status === "sending"}
+              className="flex items-center justify-center gap-2 bg-white text-background font-mono text-sm font-bold py-3 px-6 rounded hover:bg-accent transition-colors disabled:opacity-50"
             >
-              SEND
+              {status === "sending" ? "SENDING..." : "SEND"}
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M22 2 11 13" />
                 <path d="M22 2 15 22 11 13 2 9l20-7z" />
               </svg>
             </button>
+            {status === "success" && (
+              <p className="font-mono text-xs text-green-400">Message sent successfully! I&apos;ll get back to you soon.</p>
+            )}
+            {status === "error" && (
+              <p className="font-mono text-xs text-red-400">{errorMsg}</p>
+            )}
           </form>
 
           {/* ── Right: Get in Touch ── */}
